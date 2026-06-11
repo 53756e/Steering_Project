@@ -1,0 +1,57 @@
+import math as m
+def calculate_arkemann(steering_angle_deg, wheelbase=1.55, tread=0.42):
+    """
+    사용자가 입력한 스티어링 각도를 바탕으로 양쪽 바퀴의 조향각을 계산하는 함수. (길이 단위: mm)
+    """
+    
+    alpha = m.radians(steering_angle_deg)
+
+    if steering_angle_deg == 0:
+        return 0.0, 0.0
+    
+    R = wheelbase / m.tan(alpha)
+
+    delta_inside_rad = m.atan(wheelbase / (R - (tread / 2)))
+    delta_outside_rad = m.atan(wheelbase / (R + (tread / 2)))
+
+    delta_inside = m.degrees(delta_inside_rad)
+    delta_outside = m.degrees(delta_outside_rad)
+
+    return delta_inside, delta_outside
+
+def main():
+    print("==============================")
+    print(f"arkermann steering simulator")
+    print("==============================")
+
+    W_BASE = 1.55
+    TREAD = 0.42
+
+    user_input = input("\n원하는 조향각을 입력하세요 (-45° ~ 45°, 'q'를 누르면 종료)")
+    while True:
+        if user_input.lower() == 'q':
+            print("시뮬레이터를 종료합니다.")
+            break
+
+        try:
+            angle = float(user_input)
+
+            if angle < -45 or angle > 45:
+                print("입력한 각도가 조향 물리 한계를 벗어났습니다. 다시 입력하세요")
+                continue
+
+            in_angle, out_angle = calculate_arkemann(angle, W_BASE, TREAD)
+
+            print(f"입력 조향각: {angle}°")
+            print(f"[계산 결과] 안쪽 바퀴 각도: {in_angle:.5f}°")
+            print(f"[계산 결과] 바깥쪽 바퀴 각도: {out_angle:.5f}°")
+            print(f"양쪽 바퀴 조향각 차이: {abs(in_angle-out_angle):.5f}")
+            # 추후에 실시간 데이터 송신을 위해서는 while 루프가 돌면서 신호를 계속 보내줘야 하므로 break 삭제
+            break
+
+        except ValueError:
+            print("[오류] 올바른 숫자나 'q'를 입력하세오.")
+
+# 이 파일이 직접 실행되었는지, 아니면 imoort되어 실행되었는지를 판단하는 코드 지금은 필요 x
+if __name__ == "__main__":
+    main()
