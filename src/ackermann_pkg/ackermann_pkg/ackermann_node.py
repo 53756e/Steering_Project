@@ -1,0 +1,87 @@
+import math
+import rclpy
+from rclpy.node import Node
+
+# =====================================================================
+# 로봇 관절 상태를 전달하는 표준 메시지(JointState)를 불러옴.
+# =====================================================================
+from sensor_msgs.msg import JointState
+
+def calculate_ackermann(steering_angle_deg, wheelbase=1.4, tread=0.42):
+    alpha = math.radians(steering_angle_deg)
+    if steering_angle_deg == 0:
+        return 0.0, 0.0
+    R = wheelbase / math.tan(alpha)
+    delta_inside_rad = math.atan(wheelbase / (R - (tread / 2)))
+    delta_outside_rad = math.atan(wheelbase / (R + (tread / 2)))
+    
+    # RViz 3D 시뮬레이터는 '도(degree)'가 아닌 '라디안(radian)' 단위만 사용
+    # 따라서 변환 없이 라디안 값을 그대로 반환.
+    return delta_inside_rad, delta_outside_rad
+
+class AckermannSimulatorNode(Node):
+    def __init__(self):
+        super().__init__('ackermann_node')
+        
+        # 'joint_states'라는 이름의 Topic으로 JointState 메시지를 발행함.
+        self.joint_pub = self.create_publisher(JointState, 'joint_states', 10)
+        
+        self.get_logger().info('=========================================')
+        self.get_logger().info('  [RViz 연동 준비 완료] 아커만 퍼블리셔 노드 시작!')
+        self.get_logger().info('=========================================')
+        
+        self.run_simulator()
+
+    def run_simulator(self):
+        W_BASE = 1.4
+        TREAD = 0.42
+        
+        while rclpy.ok():
+            user_input = input("\n원하는 조향각을 입력하세요 (-45 ~ 45도, 종료: q): ")
+            
+            if user_input.lower() == 'q':
+                self.get_logger().info("시뮬레이터를 종료합니다.")
+                break
+                
+            try:
+                angle = float(user_input)
+                if angle < -45 or angle > 45:
+                    print("[경고] 조향 물리 한계를 벗어났습니다!")
+                    continue
+                    
+                in_rad, out_rad = calculate_ackermann(angle, W_BASE, TREAD)
+                
+                # 화면 출력을 위해 보기 편한 degree로 임시 변환
+                print(f"\n--> 입력 조향각: {angle}°")
+                print(f"--> 안쪽 바퀴: {math.degrees(in_rad):.2f}°, 바깥쪽 바퀴: {math.degrees(out_rad):.2f}°")
+                
+                # =====================================================================
+                # [메시지 조립] URDF 설계도에 적어둔 관절 이름과 매칭하여 메시지를 발행.
+                # =====================================================================
+                msg = JointState()
+                msg.header.stamp = self.get_clock().now().to_msg()
+                
+                # joint 이름과 매칭
+                msg.name = ['front_left_steer_joint', 'front_right_steer_joint']
+                
+                # 핸들을 왼쪽(양수)으로 꺾을 때와 오른쪽(음수)으로 꺾을 때 안쪽/바깥쪽 매칭
+                if angle >= 0:
+                    msg.position = [in_rad, out_rad]  # 왼쪽이 안쪽
+                else:
+                    msg.position = [out_rad, in_rad]  # 오른쪽이 안쪽
+                    
+                # 조립된 joint 메시지 발행
+                self.joint_pub.publish(msg)
+                print("[ROS 2] 📡 RViz로 로봇 관절(JointState) 제어 신호 전송 완료!")
+                
+            except ValueError:
+                print("[오류] 올바른 숫자나 'q'를 입력해주세요.")
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = AckermannSimulatorNode()
+    node.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
