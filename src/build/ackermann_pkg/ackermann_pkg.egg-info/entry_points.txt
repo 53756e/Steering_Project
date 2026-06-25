@@ -1,3 +1,0 @@
-[console_scripts]
-ackermann_cmd = ackermann_pkg.ackermann_node:main
-
