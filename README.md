@@ -71,8 +71,38 @@ calculate_ackermann(angle) 처럼 계산 로직을 함수로 분리하여 코드
 - 시각화 도구로는 RViz2를 사용하였습니다.
 
 2. 실행 방법
+- 아래의 코드를 차례로 터미널에 입력합니다.
    ```
-   mkdir -p ~/ros2_ws/src
+   mkdir -p ~/ros2_ws
    cd ~/ros2_ws/src
    ```
-- 레포지토리 내의 src 파일을 
+- 레포지토리 내의 src 파일을 위의 코드를 실행 해 만든 파일 안에 위치시킵니다.
+- 아래의 코드를 입력해 폴더를 이동하고 패키지를 빌드합니다.
+  ```
+  cd ~/ros2_ws
+  colcon build --packages-select ackermann_pkg
+  ```
+- 첫 번째 터미널에 아래의 코드를 차례로 입력해 환경 변수를 반영하고 RViz를 실행합니다.
+  ```
+  source /opt/ros/humble/setup.bash
+  source ~/ros2_ws/install/setup.bash
+  ros2 launch ackermann_pkg display.launch.py
+  ```
+- 두 번째 터미널에 아래의 코드를 차례로 입력하여 파이썬 프로그램을 실행합니다.
+  ```
+  source /opt/ros/humble/setup.bash
+  source ~/ros2_ws/install/setup.bash
+  ros2 run ackermann_pkg ackermann_cmd
+  ```
+- 두 번째 터미널에 실행된 파이썬 프로그램에 조향각을 입력하면 RViz프로그램에 반영됩니다!
+
+### 참고 사항
+파일 실행 후 화면이 투명하거나 모델이 안 보일 때의 설정법입니다.
+
+화면 왼쪽 패널 Global Options ➡️ Fixed Frame 칸을 클릭한 후, base_link라고 직접 입력하고 엔터(Enter)를 칩니다.
+
+디스플레이 패널 좌측 하단의 Add 버튼을 누른 뒤, RobotModel 항목을 추가합니다.
+
+추가된 RobotModel ➡️ Description Topic 칸을 클릭하여 /robot_description 채널을 수동으로 연결해 주면 파란색 자작차 가상 모델이 활성화됩니다.
+
+두 번째 터미널 창에 조향각(예: 20)을 입력하면 앞바퀴 두 개가 아커만 기하 수식에 맞춰 실시간으로 서로 다르게 꺾이는 모습을 관찰할 수 있습니다.
